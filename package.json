@@ -1,0 +1,26 @@
+{
+  "name": "HW4",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "mysql": "^2.18.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JianEatsHi-Chew/chen95_CSE316_HW4.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JianEatsHi-Chew/chen95_CSE316_HW4/issues"
+  },
+  "homepage": "https://github.com/JianEatsHi-Chew/chen95_CSE316_HW4#readme"
+}
