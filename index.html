@@ -4,15 +4,20 @@
         <title>CSE316 HW4</title>
     </head>
     <body>
-        <form action="http://localhost:8080" method="POST">
-            Search <input type="text" name="name">
+        <form action="http://localhost:8080/search" method="POST">
+            Search <input type="text" name="search">
              in <select name="fields">
+                 <option value="*">All Fields</option>
                 <option value="Subj">Subject</option>
                 <option value="Title">Course Title</option>
                 <option value="Instr">Instructor</option>
                 <option value="CRS">Course</option>
              </select>
-            <button type="submit">Find</button>
+            <button id="submit" type="submit">Find</button>
         </form>
+        <table>
+            <th>Something</th>
+            
+        </table>
     </body>
 </html>
