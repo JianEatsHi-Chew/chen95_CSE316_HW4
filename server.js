@@ -87,9 +87,16 @@ function sqlToHTML(result){
                     </style>
                 </head>
                 <body>
+                    <script>
+                        var xhttp = new XMLHttpRequest();
+                        function addCourse(a, b, c, d){
+                            console.log(a + " : " + b + " : " + c + " : " + d);
+                        }
+                    </script>
                     <form action="http://localhost:8080/search" method="POST">
                         Search <input type="text" name="search">
-                        in <select name="fields">
+                        in 
+                        <select name="fields">
                             <option value="*">All Fields</option>
                             <option value="Subj">Subject</option>
                             <option value="Title">Course Title</option>
@@ -135,7 +142,8 @@ function sqlToHTML(result){
                 </td>
             `;
         // Put button relating to adding
-        entriesString += `<td><button onclick="alert('hi')">Add</button></td>`;
+        // TODO -- Could potentially make the Add button as a form.
+        entriesString += `<td><button onclick="addCourse('` + entry.Subj + `','` + entry.CRS + `','` + entry.Cmp + `','` + entry.Sctn + `')">Add</button></td>`;
         entriesString += `</tr>`;
     }
     outputString = outputString.replace("_input_", entriesString);
