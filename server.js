@@ -2,14 +2,14 @@
 
 var express = require("express");
 bodyParser = require("body-parser");
-var path = require("path");
+//var path = require("path");
 const mysql = require("mysql");
 // ./node_modules/.bin/nodemon server.js
 
 const con = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "",
+    password: "LEnovo12$",
     database: "316hw4",
 });
 app = express();
@@ -48,23 +48,69 @@ app.get('/', function(req, res) {
 });
 
 app.post("/search", (req, res) => {
+    if (req.body.fields == "CRS") {
+        con.query(
+            `SELECT * FROM courses WHERE ${req.body.fields} = ${req.body.search};`,
+            function (err, result) {
+                if (err) throw err;
+                outputString = sqlToHTML(result);
+                res.send(outputString);
+            }
+        );
+    }else if (req.body.fields == "Title" || req.body.fields == "Instr" || req.body.fields == "Subj" || req.body.fields == "Days") {
+        con.query(
+            `SELECT * FROM courses WHERE ${req.body.fields} LIKE '%${req.body.search}%';`,
+            function (err, result) {
+                if (err) throw err;
+                outputString = sqlToHTML(result);
+                res.send(outputString);
+            }
+        );
+    }else if (req.body.fields == "*") {
+        con.query(
+            `SELECT * FROM courses WHERE ` +
+                `Subj LIKE '%${req.body.search}%' OR ` +
+                `CRS = '${req.body.search}' OR ` +
+                `Title LIKE '%${req.body.search}%' OR ` +
+                `Cmp = '${req.body.search}' OR ` +
+                `Sctn LIKE '%${req.body.search}%' OR ` +
+                `Days LIKE '%${req.body.search}%' OR ` +
+                `Start_Time LIKE '%${req.body.search}%' OR ` +
+                `End_Time LIKE '%${req.body.search}%' OR ` +
+                `Mtg_Start_Date LIKE '%${req.body.search}%' OR ` +
+                `Duration = '${req.body.search}' OR ` +
+                `Instruction_Mode LIKE '%${req.body.search}%' OR ` +
+                `Building LIKE '%${req.body.search}%' OR ` +
+                `Room LIKE '%${req.body.search}%' OR ` +
+                `Instr LIKE '%${req.body.search}%' OR ` +
+                `Cmbnd_Descr LIKE '%${req.body.search}%'`,
+            function (err, result) {
+                if (err) throw err;
+                outputString = sqlToHTML(result);
+                res.send(outputString);
+            }
+        );
+    }
+});
+
+app.post("/schedule", (req, res) => {
+    id = Math.random() * 9000;
     con.query(
-        `SELECT *
-        FROM courses 
-        WHERE ${req.body.fields} = ${req.body.search}`,function (err, result) {
-            if(err) throw err;
-            outputString = sqlToHTML(result);
-            res.send(outputString);
+        `INSERT INTO schedule (Subj, CRS, Title, Cmp, Sctn, Days, Start_Time, End_Time, id) 
+            SELECT Subj, CRS, Title, Cmp, Sctn, Days, Start_Time, End_Time, ${id}
+            FROM courses 
+            WHERE CRS = '${req.body.CRS}' AND Sctn = '${req.body.Sctn}';`,
+        function (err, result) {
+            if (err) throw err;
+            console.log("inserted");
+            removeDuplicateEntry();
+            res.send("hi");
         }
     );
 });
 
-app.post("/schedule", (req, res) => {
-    res.send("hi");
-});
-
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    // Server running on port 8080
 });
 
 function sqlToHTML(result){
@@ -87,12 +133,6 @@ function sqlToHTML(result){
                     </style>
                 </head>
                 <body>
-                    <script>
-                        var xhttp = new XMLHttpRequest();
-                        function addCourse(a, b, c, d){
-                            console.log(a + " : " + b + " : " + c + " : " + d);
-                        }
-                    </script>
                     <form action="http://localhost:8080/search" method="POST">
                         Search <input type="text" name="search">
                         in 
@@ -102,6 +142,7 @@ function sqlToHTML(result){
                             <option value="Title">Course Title</option>
                             <option value="Instr">Instructor</option>
                             <option value="CRS">Course</option>
+                            <option value="Days">Days</option>
                         </select>
                         <button id="submit" type="submit">Find</button>
                     </form>
@@ -117,7 +158,7 @@ function sqlToHTML(result){
     entriesString = ``;
     for (i = 0; i < result.length; i++) {
         entry = result[i];
-        entriesString += `<tr><th>${i}</th>`;
+        entriesString += `<tr><th>${i + 1}</th>`;
         // Put Subj, CRS#, and Section
         entriesString += `
                 <th>${entry.Subj}${entry.CRS}.${entry.Sctn}</th>
@@ -127,7 +168,7 @@ function sqlToHTML(result){
                 <td>
                     <p class="coursename">${entry.Title}<p>
                     by ${entry.Instr}. <br>
-                    ${entry.CMP} : ${entry.Mtg_Start_Date} to ${entry.Mtg_End_Date} \t on Days: ${entry.Days} <br> 
+                    ${entry.Cmp} : ${entry.Mtg_Start_Date} to ${entry.Mtg_End_Date} \t on Days: ${entry.Days} <br> 
                     Time from : ${entry.Start_Time} to ${entry.End_Time} \t Duration: ${entry.Duration} <br>
                     Instruction Mode: ${entry.Instruction_Mode} \t ${entry.Building}, ${entry.Room}
                 </td>
@@ -137,15 +178,34 @@ function sqlToHTML(result){
                 <td>
                     Enrollment Cap: ${entry.Enrl_Cap}<br>
                     Waitlist Cap: ${entry.Wait_Cap}<br>
-                    Combined Description: ${entry.Cmbnd_Descr}<br>
-                    Combined Enrollment Cap: ${entry.Cmbnd_Enrl_Cap}
+                    Combined Description: ${(entry.Cmbnd_Descr != undefined ? entry.Cmbnd_Descr : "")}<br>
+                    Combined Enrollment Cap: ${(entry.Cmbnd_Descr != undefined ? entry.Cmbnd_Descr : "")}
                 </td>
             `;
         // Put button relating to adding
         // TODO -- Could potentially make the Add button as a form.
-        entriesString += `<td><button onclick="addCourse('` + entry.Subj + `','` + entry.CRS + `','` + entry.Cmp + `','` + entry.Sctn + `')">Add</button></td>`;
+        entriesString += `
+                <td>
+                    <form action="http://localhost:8080/schedule" method="POST">
+                        <input name="CRS" type="hidden" value="${entry.CRS}">
+                        <input name="Sctn" type="hidden" value="${entry.Sctn}">
+                        <button name="my-schedule" type="submit" value>Add</button>
+                    </form>
+                </td>`;
         entriesString += `</tr>`;
     }
     outputString = outputString.replace("_input_", entriesString);
     return outputString;
+}
+
+function removeDuplicateEntry(){
+    con.query(
+        `DELETE s1 FROM schedule s1 ` +
+            `INNER JOIN schedule s2 ` +
+            `WHERE s1.id > s2.id AND s1.CRS = s2.CRS AND ` +
+            `s1.Sctn = s2.Sctn;`,
+        function (err, result) {
+            console.log("Removed duplicates");
+        }
+    );
 }
