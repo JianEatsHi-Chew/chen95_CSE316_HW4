@@ -9,7 +9,7 @@ const mysql = require("mysql");
 const con = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "LEnovo",
+    password: "",
     database: "316hw4",
 });
 app = express();
