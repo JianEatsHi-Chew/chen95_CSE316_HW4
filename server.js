@@ -69,31 +69,24 @@ app.post("/search", (req, res) => {
         );
     }else if (req.body.fields == "Start_Time") {
         reqClock = req.body.search.toUpperCase();
-        reqMeridiem = (reqClock.indexOf("AM") != -1) ? "AM" : "PM";
-        reqTime = reqClock.substring(0, reqClock.indexOf(reqMeridiem));
-        reqTime = reqTime.indexOf(":") == 1 ? "0" + reqTime : reqTime;
-        if (reqTime.indexOf("12:") != -1) {
-            reqTime = reqTime.replace("12:", "00:");
+        reqMeridiem = reqClock.indexOf("AM") != -1 ? "AM" : "PM";
+        timeSeparator = reqClock.indexOf(" ") == -1 ? reqClock.indexOf(reqMeridiem) : reqClock.indexOf(" ");
+        reqTime = reqClock.substring(0, timeSeparator);
+        if (reqClock.indexOf("PM") != -1 && reqClock.indexOf("12:") == -1) {
+            time = String(
+                (parseInt(reqTime.substring(0, reqTime.indexOf(":"))) + 12) % 24
+            );
+            reqTime = time + reqTime.substring(reqTime.indexOf(":"));
         }
+        reqTime = reqTime.indexOf(":") == 1 ? "0" + reqTime : reqTime;
+        timeRequest = reqTime + " " + reqMeridiem;
         con.query(`SELECT * FROM courses;`, function (err, result) {
             if (err) throw err;
             temp = [];
             for (i = 0; i < result.length; i++) {
                 entry = result[i];
-                clock = entry.Start_Time;
-                meridiem = clock.indexOf("AM") != -1 ? "AM" : "PM";
-                time = clock.substring(0, clock.indexOf(meridiem));
-                time = (time.indexOf(":") == 1) ? "0" + time : time;
-                if (time.indexOf("12:") != -1) {
-                    time = time.replace("12:", "00:");
-                }
-                if (Object.is(reqMeridiem, "PM") && Object.is(meridiem, "AM")) {
-                    continue;
-                }
-                if (Object.is(reqMeridiem, "AM") && Object.is(meridiem, "PM")){
-                    temp.push(entry);
-                }
-                if (time > reqTime) {
+                timeEntry = militTime(entry);
+                if (timeEntry > timeRequest){
                     temp.push(entry);
                 }
             }
