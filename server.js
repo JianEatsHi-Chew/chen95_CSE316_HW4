@@ -130,6 +130,12 @@ app.post("/search", (req, res) => {
             reqMeridiem = reqClock.indexOf("AM") != -1 ? "AM" : "PM";
             timeSeparator = reqClock.indexOf(" ") == -1 ? reqClock.indexOf(reqMeridiem) : reqClock.indexOf(" ");
             reqTime = reqClock.substring(0, timeSeparator);
+            if (reqClock.indexOf("PM") != -1 && reqClock.indexOf("12:") == -1) {
+                time = String(
+                    (parseInt(reqTime.substring(0, reqTime.indexOf(":"))) + 12) % 24
+                );
+                reqTime = time + reqTime.substring(reqTime.indexOf(":"));
+            }
             reqTime = reqTime.indexOf(":") == 1 ? "0" + reqTime : reqTime;
             timeRequest = reqTime + " " + reqMeridiem;
             con.query(`SELECT * FROM courses;`, function (err, result) {
