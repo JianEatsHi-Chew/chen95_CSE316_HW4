@@ -2,9 +2,7 @@
 
 var express = require("express");
 bodyParser = require("body-parser");
-//var path = require("path");
 const mysql = require("mysql");
-// ./node_modules/.bin/nodemon server.js
 
 const con = mysql.createConnection({
     host: "localhost",
@@ -150,24 +148,63 @@ app.post("/search", (req, res) => {
 
 app.post("/schedule", (req, res) => {
     id = Math.random() * 9000;
-    con.query(
-        `INSERT INTO schedule (Subj, CRS, Title, Cmp, Sctn, Days, Start_Time, End_Time, id) 
-            SELECT Subj, CRS, Title, Cmp, Sctn, Days, Start_Time, End_Time, ${id}
-            FROM courses 
-            WHERE CRS = '${req.body.CRS}' AND Sctn = '${req.body.Sctn}';`,
-        function (err, result0) {
-            if (err) throw err;
-            //console.log("inserted");
-            removeDuplicateEntry();
-            con.query(
-                `SELECT * FROM schedule ORDER BY Start_Time ASC;`,
-                function (err, result1) {
-                    if (err) throw err;
-                    res.send(sqlMakeTable(result1));
+    if(req.body.CRS == undefined){ 
+        con.query(
+            `INSERT INTO schedule (Subj, CRS, Title, Cmp, Sctn, Days, Start_Time, End_Time, id) 
+                        SELECT Subj, CRS, Title, Cmp, Sctn, Days, Start_Time, End_Time, ${id}
+                        FROM courses 
+                        WHERE CRS = '${req.body.CRS}' AND Sctn = '${req.body.Sctn}';`,
+            function (err, result0) {
+                con.query(
+                    `SELECT * FROM schedule ORDER BY Start_Time ASC;`,
+                    function (err, result1) {
+                        if (err) throw err;
+                        res.send(sqlMakeTable(result1));
+                    }
+                );
+            }
+        );
+    } else {
+        con.query(`SELECT * FROM schedule;`,function (err, result){
+            overlap = false;
+            reqStartTime = militTime(req.body.Start_Time);
+            reqEndTime = militTime(req.body.End_Time);
+            for (i = 0; i < result.length; i++) {
+                courseStartTime = militTime(result[i].Start_Time);
+                courseEndTime = militTime(result[i].End_Time);
+                if (!((courseStartTime < reqStartTime &&courseEndTime < reqStartTime) ||
+                    (courseStartTime > reqStartTime &&courseEndTime > reqStartTime))) {
+                        overlap = true;
                 }
-            );
-        }
-    );
+            }
+            if(!overlap){
+                con.query(
+                    `INSERT INTO schedule (Subj, CRS, Title, Cmp, Sctn, Days, Start_Time, End_Time, id) 
+                        SELECT Subj, CRS, Title, Cmp, Sctn, Days, Start_Time, End_Time, ${id}
+                        FROM courses 
+                        WHERE CRS = '${req.body.CRS}' AND Sctn = '${req.body.Sctn}';`,
+                    function (err, result0) {
+                        removeDuplicateEntry();
+                        con.query(
+                            `SELECT * FROM schedule ORDER BY Start_Time ASC;`,
+                            function (err, result1) {
+                                if (err) throw err;
+                                res.send(sqlMakeTable(result1));
+                            }
+                        );
+                    }
+                );
+            } else {
+                con.query(
+                    `SELECT * FROM schedule ORDER BY Start_Time ASC;`,
+                    function (err, result1) {
+                        if (err) throw err;
+                        res.send(sqlMakeTable(result1));
+                    }
+                );
+            }
+        });
+    }
 });
 
 app.listen(port, () => {
@@ -251,6 +288,8 @@ function sqlToHTML(result){
                     <form action="http://localhost:8080/schedule" method="POST">
                         <input name="CRS" type="hidden" value="${entry.CRS}">
                         <input name="Sctn" type="hidden" value="${entry.Sctn}">
+                        <input name="Start_Time" type="hidden" value="${entry.Start_Time}">
+                        <input name="End_Time" type="hidden" value="${entry.End_Time}">
                         <button name="my-schedule" type="submit" value>Add</button>
                     </form>
                 </td>`;
@@ -406,7 +445,7 @@ function sortEntryTime(result){
 
 function militTime(entry) {
     //console.log(entry);
-    reqClock = entry.Start_Time.toUpperCase();
+    reqClock = entry.Start_Time != undefined ? entry.Start_Time.toUpperCase() : entry;
     if (reqClock.indexOf("PM") != -1 && reqClock.indexOf("12:") == -1){
         time = String((parseInt(reqClock.substring(0, reqClock.indexOf(":"))) + 12) % 24);
         reqClock = time + reqClock.substring(reqClock.indexOf(":"));
