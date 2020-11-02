@@ -175,6 +175,7 @@ app.post("/schedule", (req, res) => {
                 if (!((courseStartTime < reqStartTime &&courseEndTime < reqStartTime) ||
                     (courseStartTime > reqStartTime &&courseEndTime > reqStartTime))) {
                         overlap = true;
+                        //console.log('Collision')
                 }
             }
             if(!overlap){
